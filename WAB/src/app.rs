@@ -1,7 +1,8 @@
 use ratatui::{DefaultTerminal, Frame, crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, layout::{Constraint, Layout}, widgets::{ListState}};
-
+use crate::setup::{self, GameSetup};
 enum Mode {
-    MainMenu
+    MainMenu,
+    GameSetup
 }
 
 pub struct App {
@@ -9,7 +10,8 @@ pub struct App {
     panel: Mode,
     menu: Vec<String>,
     pub state: ListState,
-    pub state_index: usize
+    pub state_index: usize,
+    setup: GameSetup
 }
 
 impl App {
@@ -19,7 +21,8 @@ impl App {
             panel: Mode::MainMenu,
             menu: vec![],
             state: ListState::default(),
-            state_index: 0
+            state_index: 0,
+            setup: GameSetup::new()
         };
 
         app
@@ -33,7 +36,15 @@ impl App {
 
             if event::poll(std::time::Duration::from_millis(10))? {
                 if let Event::Key(key) = event::read()? {
-                    self.handle_input(key);
+                    match self.panel {
+                        Mode::MainMenu => self.handle_input(key),
+                        Mode::GameSetup => {
+                            let is_back = self.setup.handle_key(key);
+                            if is_back {
+                                self.panel = Mode::MainMenu;
+                            }
+                        },
+                    }
                 }
             }
         }
@@ -81,6 +92,19 @@ impl App {
                 self.render_menu(frame, main, self.menu.clone());
                 self.render_guide(frame, guide);
             }
+            Mode::GameSetup => {
+                self.setup.difficulty_state.select(Some(self.setup.diff_index));
+                self.setup.chartype_state.select(Some(self.setup.chartype_index));
+                let [title, setup, detail, guide] = Layout::vertical([
+                    Constraint::Length(14),
+                    Constraint::Length(7),
+                    Constraint::Length(20),
+                    Constraint::Length(3)
+                ]).areas(frame.area());
+
+                self.render_title(frame, title);
+                self.setup.render_setup(frame, setup);
+            }
         }
     }
 
@@ -108,6 +132,7 @@ impl App {
 
         match keyword {
             "Exit" => self.running = false,
+            "Start new battle" => self.panel = Mode::GameSetup,
             _ => {}
         }
     }
