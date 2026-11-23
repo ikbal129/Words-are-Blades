@@ -1,5 +1,6 @@
 mod app;
 mod ui;
+mod utils;
 mod setup;
 use ratatui::DefaultTerminal;
 use app::App;

@@ -1,5 +1,6 @@
 use ratatui::{DefaultTerminal, Frame, crossterm::event::{self, Event, KeyCode, KeyEvent, KeyEventKind}, layout::{Constraint, Layout}, widgets::{ListState}};
-use crate::setup::{self, GameSetup};
+use crate::setup::{GameSetup};
+use crate::utils::arrow;
 enum Mode {
     MainMenu,
     GameSetup
@@ -59,10 +60,12 @@ impl App {
         match key.code {
             KeyCode::Esc => self.running = false,
             KeyCode::Down => {
-                self.next();
+                self.state_index = arrow::next(self.menu.clone(), self.state_index);
+                self.state.select(Some(self.state_index));
             }
             KeyCode::Up => {
-                self.prev();
+                self.state_index = arrow::prev(self.menu.clone(), self.state_index);
+                self.state.select(Some(self.state_index));
             }
             KeyCode::Enter => {
                 self.handle_enter(self.menu[self.state_index].clone().as_str());
@@ -104,28 +107,10 @@ impl App {
 
                 self.render_title(frame, title);
                 self.setup.render_setup(frame, setup);
+                self.setup.render_details(frame, detail);
+                self.setup.render_guide(frame, guide);
             }
         }
-    }
-
-    fn next(&mut self) {
-        if self.state_index + 1 >= self.menu.len() {
-            self.state_index = 0;
-        } else {
-            self.state_index += 1;
-        }
-
-        self.state.select(Some(self.state_index));
-    }
-
-    fn prev(&mut self) {
-        if self.state_index == 0 {
-            self.state_index = self.menu.len() - 1;
-        } else {
-            self.state_index -= 1;
-        }
-
-        self.state.select(Some(self.state_index));
     }
 
     fn handle_enter(&mut self, keyword: &str) {
